@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MoodTrackerActivity extends AppCompatActivity {
@@ -12,50 +13,59 @@ public class MoodTrackerActivity extends AppCompatActivity {
     private ImageButton[] emojiButtons;
     private String selectedMood = "";
     private int selectedEmojiIndex = -1;
+    private DBHelper dbHelper;
+    private String email;
+    private String userName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mood_tracker);
 
-        // Get user name from intent
-        String name = getIntent().getStringExtra("NAME");
-        if (name == null || name.isEmpty()) {
-            name = "User";
+        dbHelper = new DBHelper(this);
+        email = getIntent().getStringExtra("EMAIL");
+        userName = getIntent().getStringExtra("NAME");
+
+        if (userName == null || userName.isEmpty()) {
+            userName = "User";
         }
 
         tvMoodTitle = findViewById(R.id.tv_mood_title);
         tvMoodText = findViewById(R.id.tv_mood_text);
+        tvMoodTitle.setText("How is your mood today, " + userName + "?");
 
-        tvMoodTitle.setText("How is your mood today, " + name + "?");
-
-        // Initialize emoji buttons using your actual drawable names
         emojiButtons = new ImageButton[]{
-                findViewById(R.id.emoji_yay),    // yay.png
-                findViewById(R.id.emoji_nice),   // nice.png
-                findViewById(R.id.emoji_meh),    // meh.png
-                findViewById(R.id.emoji_eh),     // eh.png
-                findViewById(R.id.emoji_ugh)     // ugh.png
+                findViewById(R.id.emoji_yay),
+                findViewById(R.id.emoji_nice),
+                findViewById(R.id.emoji_meh),
+                findViewById(R.id.emoji_eh),
+                findViewById(R.id.emoji_ugh)
         };
 
-
-        // Set click listeners for emojis
         setupEmojiListeners();
 
-        // Move forward button
         Button btnMoveForward = findViewById(R.id.btn_move_forward);
         btnMoveForward.setOnClickListener(v -> {
-            // Save mood to database or proceed to next screen
-            // Intent intent = new Intent(this, NextActivity.class);
-            // intent.putExtra("MOOD", selectedMood);
-            // startActivity(intent);
-            finish();
+            if (selectedMood.isEmpty()) {
+                Toast.makeText(this, "Please select a mood", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            boolean saved = dbHelper.addUserMood(email, selectedMood);
+            if (saved) {
+                Intent intent = new Intent(this, HowIsTodayActivity.class);
+                intent.putExtra("EMAIL", email);
+                intent.putExtra("NAME", userName);
+                intent.putExtra("MOOD", selectedMood); // CRITICAL FIX: ADD THIS LINE
+                startActivity(intent);
+                finish();
+            } else {
+                Toast.makeText(this, "Failed to save mood", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
     private void setupEmojiListeners() {
         String[] moodTexts = {"Excellent!", "Good!", "Meh", "Not great", "Terrible"};
-
         for (int i = 0; i < emojiButtons.length; i++) {
             final int index = i;
             emojiButtons[i].setOnClickListener(v -> {
@@ -67,12 +77,9 @@ public class MoodTrackerActivity extends AppCompatActivity {
     }
 
     private void selectEmoji(int selectedIndex) {
-        // Reset all emojis
         for (int i = 0; i < emojiButtons.length; i++) {
             emojiButtons[i].setSelected(false);
         }
-
-        // Highlight selected emoji
         emojiButtons[selectedIndex].setSelected(true);
         selectedEmojiIndex = selectedIndex;
     }

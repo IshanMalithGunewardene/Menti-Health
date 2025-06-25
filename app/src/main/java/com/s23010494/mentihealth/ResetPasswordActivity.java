@@ -31,14 +31,8 @@ public class ResetPasswordActivity extends AppCompatActivity {
         String newPassword = etNewPassword.getText().toString().trim();
         String confirmPassword = etConfirmPassword.getText().toString().trim();
 
-        // Validation
         if (newPassword.isEmpty() || confirmPassword.isEmpty()) {
             Toast.makeText(this, "Both fields are required", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (!InputValidator.isValidPassword(newPassword)) {
-            Toast.makeText(this, "Password must be 8+ chars with letters and numbers", Toast.LENGTH_SHORT).show();
             return;
         }
 

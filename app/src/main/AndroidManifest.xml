@@ -28,6 +28,10 @@
         <activity android:name=".AskNameActivity" />
         <activity android:name=".TermsConditionsActivity"/>
         <activity android:name=".MoodTrackerActivity"/>
+        <activity android:name=".HowIsTodayActivity"/>
+        <activity android:name=".JournalDashboardActivity"/>
+
+
 
 
 

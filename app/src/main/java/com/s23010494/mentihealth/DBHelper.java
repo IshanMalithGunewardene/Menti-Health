@@ -4,25 +4,59 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
+import java.util.ArrayList;
+import java.util.List;
+import com.s23010494.mentihealth.JournalEntry;
 
 public class DBHelper extends SQLiteOpenHelper {
+    // Database name and version
     private static final String DATABASE_NAME = "UserDB.db";
-    private static final int DATABASE_VERSION = 2; // Incremented for schema change
+    private static final int DATABASE_VERSION = 3;
 
-    // Table and column names
+    // User table
     private static final String TABLE_USERS = "users";
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_EMAIL = "email";
     private static final String COLUMN_PASSWORD = "password";
-    private static final String COLUMN_NAME = "name"; // Added name column
+    private static final String COLUMN_NAME = "name";
 
-    // Create table query with name column
+    // Mood table
+    private static final String TABLE_MOODS = "moods";
+    private static final String COLUMN_MOOD_ID = "id";
+    private static final String COLUMN_MOOD_EMAIL = "email";
+    private static final String COLUMN_MOOD = "mood";
+    private static final String COLUMN_TIMESTAMP = "timestamp";
+
+    // Journal entries table
+    private static final String TABLE_JOURNAL_ENTRIES = "journal_entries";
+    private static final String COLUMN_ENTRY_ID = "id";
+    private static final String COLUMN_ENTRY_EMAIL = "email";
+    private static final String COLUMN_ENTRY_MOOD = "mood";
+    private static final String COLUMN_ENTRY_TEXT = "entry_text";
+    private static final String COLUMN_ENTRY_DATE = "entry_date";
+
+    // Create table queries
     private static final String CREATE_TABLE_USERS = "CREATE TABLE " + TABLE_USERS + "("
             + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
             + COLUMN_EMAIL + " TEXT UNIQUE, "
             + COLUMN_PASSWORD + " TEXT, "
             + COLUMN_NAME + " TEXT)";
+
+    private static final String CREATE_TABLE_MOODS = "CREATE TABLE " + TABLE_MOODS + "("
+            + COLUMN_MOOD_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+            + COLUMN_MOOD_EMAIL + " TEXT, "
+            + COLUMN_MOOD + " TEXT, "
+            + COLUMN_TIMESTAMP + " DATETIME DEFAULT CURRENT_TIMESTAMP)";
+
+    private static final String CREATE_TABLE_JOURNAL_ENTRIES = "CREATE TABLE " + TABLE_JOURNAL_ENTRIES + "("
+            + COLUMN_ENTRY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+            + COLUMN_ENTRY_EMAIL + " TEXT, "
+            + COLUMN_ENTRY_MOOD + " TEXT, "
+            + COLUMN_ENTRY_TEXT + " TEXT, "
+            + COLUMN_ENTRY_DATE + " TEXT)";
 
     public DBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -30,12 +64,19 @@ public class DBHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        Log.d("DBHelper", "Creating tables...");
         db.execSQL(CREATE_TABLE_USERS);
+        db.execSQL(CREATE_TABLE_MOODS);
+        db.execSQL(CREATE_TABLE_JOURNAL_ENTRIES);
+        Log.d("DBHelper", "Tables created successfully");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        Log.d("DBHelper", "Upgrading database from version " + oldVersion + " to " + newVersion);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_MOODS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_JOURNAL_ENTRIES);
         onCreate(db);
     }
 
@@ -78,7 +119,8 @@ public class DBHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put(COLUMN_PASSWORD, newPassword);
 
-        int rowsAffected = db.update(TABLE_USERS, values, COLUMN_EMAIL + " = ?", new String[]{email});
+        int rowsAffected = db.update(TABLE_USERS, values,
+                COLUMN_EMAIL + " = ?", new String[]{email});
         return rowsAffected > 0;
     }
 
@@ -88,7 +130,8 @@ public class DBHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put(COLUMN_NAME, name);
 
-        int rowsAffected = db.update(TABLE_USERS, values, COLUMN_EMAIL + " = ?", new String[]{email});
+        int rowsAffected = db.update(TABLE_USERS, values,
+                COLUMN_EMAIL + " = ?", new String[]{email});
         return rowsAffected > 0;
     }
 
@@ -113,6 +156,72 @@ public class DBHelper extends SQLiteOpenHelper {
     public boolean hasName(String email) {
         String name = getName(email);
         return !name.isEmpty();
+    }
+
+    // Add user mood to moods table
+    public boolean addUserMood(String email, String mood) {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_MOOD_EMAIL, email);
+            values.put(COLUMN_MOOD, mood);
+
+            Log.d("DBHelper", "Attempting to save mood: " + mood + " for email: " + email);
+            long result = db.insert(TABLE_MOODS, null, values);
+
+            if (result != -1) {
+                Log.d("DBHelper", "Mood saved successfully with ID: " + result);
+                return true;
+            } else {
+                Log.e("DBHelper", "Failed to insert mood - result was -1");
+                return false;
+            }
+        } catch (SQLiteException e) {
+            Log.e("DBHelper", "SQLite error when saving mood: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Add journal entry to database
+    public boolean addJournalEntry(String email, String mood, String entryText, String date) {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_ENTRY_EMAIL, email);
+            values.put(COLUMN_ENTRY_MOOD, mood);
+            values.put(COLUMN_ENTRY_TEXT, entryText);
+            values.put(COLUMN_ENTRY_DATE, date);
+
+            long result = db.insert(TABLE_JOURNAL_ENTRIES, null, values);
+            return result != -1;
+        } catch (Exception e) {
+            Log.e("DBHelper", "Error saving journal entry: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Get all journal entries for a user
+    public List<JournalEntry> getJournalEntries(String email) {
+        List<JournalEntry> entries = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = db.rawQuery(
+                "SELECT * FROM " + TABLE_JOURNAL_ENTRIES +
+                        " WHERE " + COLUMN_ENTRY_EMAIL + " = ? ORDER BY " + COLUMN_ENTRY_DATE + " DESC",
+                new String[]{email});
+
+        if (cursor.moveToFirst()) {
+            do {
+                JournalEntry entry = new JournalEntry(
+                        cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_MOOD)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_TEXT)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_DATE))
+                );
+                entries.add(entry);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return entries;
     }
 }
 

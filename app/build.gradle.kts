@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId = "com.s23010494.mentihealth"
-        minSdk = 16
+        minSdk = 21
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"

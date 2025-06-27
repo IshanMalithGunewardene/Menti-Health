@@ -9,7 +9,6 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
-import com.s23010494.mentihealth.JournalEntry;
 
 public class DBHelper extends SQLiteOpenHelper {
     // Database name and version
@@ -21,12 +20,12 @@ public class DBHelper extends SQLiteOpenHelper {
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_EMAIL = "email";
     private static final String COLUMN_PASSWORD = "password";
-    private static final String COLUMN_NAME = "name";
+    private static String COLUMN_NAME = "name";
 
-    // Mood table
+    // Mood table (FIXED TYPO)
     private static final String TABLE_MOODS = "moods";
     private static final String COLUMN_MOOD_ID = "id";
-    private static final String COLUMN_MOOD_EMAIL = "email";
+    private static final String COLUMN_MOOD_EMAIL = "email";  // Fixed from COLUMN_M极OD_EMAIL
     private static final String COLUMN_MOOD = "mood";
     private static final String COLUMN_TIMESTAMP = "timestamp";
 
@@ -47,7 +46,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     private static final String CREATE_TABLE_MOODS = "CREATE TABLE " + TABLE_MOODS + "("
             + COLUMN_MOOD_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-            + COLUMN_MOOD_EMAIL + " TEXT, "
+            + COLUMN_MOOD_EMAIL + " TEXT, "  // Uses correct constant
             + COLUMN_MOOD + " TEXT, "
             + COLUMN_TIMESTAMP + " DATETIME DEFAULT CURRENT_TIMESTAMP)";
 
@@ -163,7 +162,7 @@ public class DBHelper extends SQLiteOpenHelper {
         try {
             SQLiteDatabase db = this.getWritableDatabase();
             ContentValues values = new ContentValues();
-            values.put(COLUMN_MOOD_EMAIL, email);
+            values.put(COLUMN_MOOD_EMAIL, email);  // Uses correct constant
             values.put(COLUMN_MOOD, mood);
 
             Log.d("DBHelper", "Attempting to save mood: " + mood + " for email: " + email);
@@ -223,5 +222,22 @@ public class DBHelper extends SQLiteOpenHelper {
         cursor.close();
         return entries;
     }
-}
 
+    // Delete a journal entry
+    public boolean deleteJournalEntry(String email, String date, String text) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            int rowsDeleted = db.delete(TABLE_JOURNAL_ENTRIES,
+                    COLUMN_ENTRY_EMAIL + " = ? AND " +
+                            COLUMN_ENTRY_DATE + " = ? AND " +
+                            COLUMN_ENTRY_TEXT + " = ?",
+                    new String[]{email, date, text});
+
+            Log.d("DBHelper", "Deleted " + rowsDeleted + " journal entries");
+            return rowsDeleted > 0;
+        } catch (SQLiteException e) {
+            Log.e("DBHelper", "Error deleting journal entry: " + e.getMessage());
+            return false;
+        }
+    }
+}

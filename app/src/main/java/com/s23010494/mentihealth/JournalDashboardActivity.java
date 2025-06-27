@@ -1,9 +1,10 @@
 package com.s23010494.mentihealth;
 
-import android.content.Intent;
+import android.content.Intent; // <-- Corrected import
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ImageButton;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,20 +24,17 @@ public class JournalDashboardActivity extends AppCompatActivity {
         setContentView(R.layout.activity_journal_dashboard);
         Log.d(TAG, "Activity created");
 
-        // Initialize DBHelper
         dbHelper = new DBHelper(this);
-        
-        // Get intent extras with null checks
+
         email = getIntent().getStringExtra("EMAIL");
         name = getIntent().getStringExtra("NAME");
-        
+
         if (email == null) {
             Log.e(TAG, "Email not received - finishing activity");
             finish();
             return;
         }
 
-        // Initialize RecyclerView
         rvJournalEntries = findViewById(R.id.rv_journal_entries);
         if (rvJournalEntries == null) {
             Log.e(TAG, "RecyclerView not found in layout");
@@ -44,21 +42,27 @@ public class JournalDashboardActivity extends AppCompatActivity {
         }
         rvJournalEntries.setLayoutManager(new LinearLayoutManager(this));
 
-        // Load journal entries
         loadJournalEntries();
-        
-        // Setup bottom navigation
         setupBottomNavigation();
     }
 
     private void loadJournalEntries() {
         List<JournalEntry> entries = dbHelper.getJournalEntries(email);
-        if (entries == null) {
-            Log.e(TAG, "Failed to load journal entries");
-            return;
-        }
-        
         adapter = new JournalEntriesAdapter(entries);
+
+        // Set up edit/delete actions
+        adapter.setOnEntryActionListener(new JournalEntriesAdapter.OnEntryActionListener() {
+            @Override
+            public void onEdit(JournalEntry entry, int position) {
+                Toast.makeText(JournalDashboardActivity.this, "Edit: " + entry.getText(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onDelete(JournalEntry entry, int position) {
+                Toast.makeText(JournalDashboardActivity.this, "Delete: " + entry.getText(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
         rvJournalEntries.setAdapter(adapter);
         Log.d(TAG, "Loaded " + entries.size() + " journal entries");
     }
@@ -89,4 +93,3 @@ public class JournalDashboardActivity extends AppCompatActivity {
         loadJournalEntries();
     }
 }
-

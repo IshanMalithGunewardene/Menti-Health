@@ -1,6 +1,6 @@
 package com.s23010494.mentihealth;
 
-import android.content.Intent; // <-- Corrected import
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ImageButton;
@@ -84,6 +84,15 @@ public class JournalDashboardActivity extends AppCompatActivity {
         if (btnJournal != null) {
             btnJournal.setOnClickListener(v -> loadJournalEntries());
         }
+
+        // Add Stats button navigation
+        ImageButton btnStats = findViewById(R.id.btn_stats);
+        if (btnStats != null) {
+            btnStats.setOnClickListener(v -> {
+                Intent intent = new Intent(this, StatsActivity.class);
+                startActivity(intent);
+            });
+        }
     }
 
     @Override
@@ -93,3 +102,4 @@ public class JournalDashboardActivity extends AppCompatActivity {
         loadJournalEntries();
     }
 }
+

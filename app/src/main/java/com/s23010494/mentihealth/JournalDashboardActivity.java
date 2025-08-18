@@ -1,5 +1,6 @@
 package com.s23010494.mentihealth;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -54,12 +55,19 @@ public class JournalDashboardActivity extends AppCompatActivity {
         adapter.setOnEntryActionListener(new JournalEntriesAdapter.OnEntryActionListener() {
             @Override
             public void onEdit(JournalEntry entry, int position) {
-                Toast.makeText(JournalDashboardActivity.this, "Edit: " + entry.getText(), Toast.LENGTH_SHORT).show();
+                // Launch edit activity with entry data
+                Intent editIntent = new Intent(JournalDashboardActivity.this, EditJournalActivity.class);
+                editIntent.putExtra("ENTRY_ID", entry.getId());
+                editIntent.putExtra("ENTRY_MOOD", entry.getMood());
+                editIntent.putExtra("ENTRY_TEXT", entry.getText());
+                editIntent.putExtra("ENTRY_DATE", entry.getDate());
+                startActivity(editIntent);
             }
 
             @Override
             public void onDelete(JournalEntry entry, int position) {
-                Toast.makeText(JournalDashboardActivity.this, "Delete: " + entry.getText(), Toast.LENGTH_SHORT).show();
+                // Show confirmation dialog before deleting
+                showDeleteConfirmationDialog(entry, position);
             }
         });
 
@@ -100,6 +108,23 @@ public class JournalDashboardActivity extends AppCompatActivity {
         super.onResume();
         Log.d(TAG, "onResume() - refreshing entries");
         loadJournalEntries();
+    }
+
+    private void showDeleteConfirmationDialog(JournalEntry entry, int position) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Entry")
+                .setMessage("Are you sure you want to delete this journal entry? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    boolean deleted = dbHelper.deleteJournalEntryById(entry.getId());
+                    if (deleted) {
+                        Toast.makeText(this, "Entry deleted successfully", Toast.LENGTH_SHORT).show();
+                        loadJournalEntries(); // Refresh the list
+                    } else {
+                        Toast.makeText(this, "Failed to delete entry", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 }
 

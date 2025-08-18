@@ -42,6 +42,7 @@
         <activity android:name=".MoodTrackerActivity"/>
         <activity android:name=".HowIsTodayActivity"/>
         <activity android:name=".JournalDashboardActivity"/>
+        <activity android:name=".EditJournalActivity"/>
         <activity
             android:name=".StatsActivity"
             android:theme="@style/Theme.MentiHealth"/>

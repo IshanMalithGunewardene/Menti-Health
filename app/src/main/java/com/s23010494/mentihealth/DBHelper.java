@@ -212,6 +212,7 @@ public class DBHelper extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             do {
                 JournalEntry entry = new JournalEntry(
+                        cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_ID)),
                         cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_MOOD)),
                         cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_TEXT)),
                         cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_DATE))
@@ -223,7 +224,44 @@ public class DBHelper extends SQLiteOpenHelper {
         return entries;
     }
 
-    // Delete a journal entry
+    // Delete a journal entry by ID
+    public boolean deleteJournalEntryById(int entryId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            int rowsDeleted = db.delete(TABLE_JOURNAL_ENTRIES,
+                    COLUMN_ENTRY_ID + " = ?",
+                    new String[]{String.valueOf(entryId)});
+
+            Log.d("DBHelper", "Deleted " + rowsDeleted + " journal entries with ID: " + entryId);
+            return rowsDeleted > 0;
+        } catch (SQLiteException e) {
+            Log.e("DBHelper", "Error deleting journal entry by ID: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Update a journal entry
+    public boolean updateJournalEntry(int entryId, String mood, String entryText, String date) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_ENTRY_MOOD, mood);
+            values.put(COLUMN_ENTRY_TEXT, entryText);
+            values.put(COLUMN_ENTRY_DATE, date);
+
+            int rowsUpdated = db.update(TABLE_JOURNAL_ENTRIES, values,
+                    COLUMN_ENTRY_ID + " = ?",
+                    new String[]{String.valueOf(entryId)});
+
+            Log.d("DBHelper", "Updated " + rowsUpdated + " journal entries with ID: " + entryId);
+            return rowsUpdated > 0;
+        } catch (SQLiteException e) {
+            Log.e("DBHelper", "Error updating journal entry: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Delete a journal entry (legacy method for backward compatibility)
     public boolean deleteJournalEntry(String email, String date, String text) {
         SQLiteDatabase db = this.getWritableDatabase();
         try {

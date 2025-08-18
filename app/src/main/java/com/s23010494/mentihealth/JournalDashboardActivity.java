@@ -98,6 +98,19 @@ public class JournalDashboardActivity extends AppCompatActivity {
         if (btnStats != null) {
             btnStats.setOnClickListener(v -> {
                 Intent intent = new Intent(this, StatsActivity.class);
+                intent.putExtra("EMAIL", email);
+                intent.putExtra("NAME", name);
+                startActivity(intent);
+            });
+        }
+
+        // Add Calendar button navigation
+        ImageButton btnCalendar = findViewById(R.id.btn_calendar);
+        if (btnCalendar != null) {
+            btnCalendar.setOnClickListener(v -> {
+                Intent intent = new Intent(this, CalendarActivity.class);
+                intent.putExtra("EMAIL", email);
+                intent.putExtra("NAME", name);
                 startActivity(intent);
             });
         }

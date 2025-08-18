@@ -8,7 +8,9 @@ import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DBHelper extends SQLiteOpenHelper {
     // Database name and version
@@ -259,6 +261,31 @@ public class DBHelper extends SQLiteOpenHelper {
             Log.e("DBHelper", "Error updating journal entry: " + e.getMessage());
             return false;
         }
+    }
+
+    // Get moods by date for calendar display
+    public Map<String, String> getMoodsByDate(String email, String yearMonth) {
+        Map<String, String> moodsByDate = new HashMap<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        // Query to get the first mood entry for each date in the specified month
+        Cursor cursor = db.rawQuery(
+                "SELECT " + COLUMN_ENTRY_DATE + ", " + COLUMN_ENTRY_MOOD + 
+                " FROM " + TABLE_JOURNAL_ENTRIES +
+                " WHERE " + COLUMN_ENTRY_EMAIL + " = ? AND " + COLUMN_ENTRY_DATE + " LIKE ?" +
+                " GROUP BY " + COLUMN_ENTRY_DATE +
+                " ORDER BY " + COLUMN_ENTRY_DATE + " ASC",
+                new String[]{email, yearMonth + "%"});
+
+        if (cursor.moveToFirst()) {
+            do {
+                String date = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_DATE));
+                String mood = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_MOOD));
+                moodsByDate.put(date, mood);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return moodsByDate;
     }
 
     // Delete a journal entry (legacy method for backward compatibility)

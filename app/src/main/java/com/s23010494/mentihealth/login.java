@@ -47,11 +47,26 @@ public class login extends AppCompatActivity {
         }
 
         if (dbHelper.authenticateUser(email, password)) {
-            Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
-            Intent intent = new Intent(login.this, AskNameActivity.class);
-            intent.putExtra("EMAIL", email);
-            startActivity(intent);
-            finish();
+            // Check if user already has a name stored
+            if (dbHelper.hasName(email)) {
+                // User already has a name - welcome them back and go to MoodTracker
+                String userName = dbHelper.getName(email);
+                Toast.makeText(this, "Welcome back, " + userName + "!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(login.this, MoodTrackerActivity.class);
+                intent.putExtra("EMAIL", email);
+                intent.putExtra("NAME", userName);
+                // Clear the back stack so user can't go back to login
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            } else {
+                // User doesn't have a name yet - go to AskNameActivity
+                Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(login.this, AskNameActivity.class);
+                intent.putExtra("EMAIL", email);
+                startActivity(intent);
+                finish();
+            }
         } else {
             Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
         }

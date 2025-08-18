@@ -15,7 +15,7 @@ import java.util.Map;
 public class DBHelper extends SQLiteOpenHelper {
     // Database name and version
     private static final String DATABASE_NAME = "UserDB.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
 
     // User table
     private static final String TABLE_USERS = "users";
@@ -39,6 +39,14 @@ public class DBHelper extends SQLiteOpenHelper {
     private static final String COLUMN_ENTRY_TEXT = "entry_text";
     private static final String COLUMN_ENTRY_DATE = "entry_date";
 
+    // Daily steps table
+    private static final String TABLE_DAILY_STEPS = "daily_steps";
+    private static final String COLUMN_STEPS_ID = "id";
+    private static final String COLUMN_STEPS_EMAIL = "email";
+    private static final String COLUMN_STEPS_DATE = "date";
+    private static final String COLUMN_STEPS_COUNT = "steps_count";
+    private static final String COLUMN_STEPS_BASELINE = "baseline_count";
+
     // Create table queries
     private static final String CREATE_TABLE_USERS = "CREATE TABLE " + TABLE_USERS + "("
             + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -59,6 +67,14 @@ public class DBHelper extends SQLiteOpenHelper {
             + COLUMN_ENTRY_TEXT + " TEXT, "
             + COLUMN_ENTRY_DATE + " TEXT)";
 
+    private static final String CREATE_TABLE_DAILY_STEPS = "CREATE TABLE " + TABLE_DAILY_STEPS + "("
+            + COLUMN_STEPS_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+            + COLUMN_STEPS_EMAIL + " TEXT, "
+            + COLUMN_STEPS_DATE + " TEXT, "
+            + COLUMN_STEPS_COUNT + " INTEGER DEFAULT 0, "
+            + COLUMN_STEPS_BASELINE + " INTEGER DEFAULT 0, "
+            + "UNIQUE(" + COLUMN_STEPS_EMAIL + ", " + COLUMN_STEPS_DATE + "))";
+
     public DBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -69,16 +85,22 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_TABLE_USERS);
         db.execSQL(CREATE_TABLE_MOODS);
         db.execSQL(CREATE_TABLE_JOURNAL_ENTRIES);
+        db.execSQL(CREATE_TABLE_DAILY_STEPS);
         Log.d("DBHelper", "Tables created successfully");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         Log.d("DBHelper", "Upgrading database from version " + oldVersion + " to " + newVersion);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_MOODS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_JOURNAL_ENTRIES);
-        onCreate(db);
+        if (oldVersion < 4) {
+            // Add daily steps table for version 4
+            try {
+                db.execSQL(CREATE_TABLE_DAILY_STEPS);
+                Log.d("DBHelper", "Added daily steps table");
+            } catch (SQLiteException e) {
+                Log.e("DBHelper", "Error adding daily steps table: " + e.getMessage());
+            }
+        }
     }
 
     // Add new user to database
@@ -304,5 +326,61 @@ public class DBHelper extends SQLiteOpenHelper {
             Log.e("DBHelper", "Error deleting journal entry: " + e.getMessage());
             return false;
         }
+    }
+
+    // Save or update daily steps for a user
+    public boolean saveDailySteps(String email, String date, int currentSteps, int baselineSteps) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_STEPS_EMAIL, email);
+            values.put(COLUMN_STEPS_DATE, date);
+            values.put(COLUMN_STEPS_COUNT, currentSteps);
+            values.put(COLUMN_STEPS_BASELINE, baselineSteps);
+
+            // Try to insert first, if it fails due to unique constraint, update instead
+            long result = db.insertWithOnConflict(TABLE_DAILY_STEPS, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+            Log.d("DBHelper", "Saved daily steps: " + (currentSteps - baselineSteps) + " for " + email + " on " + date);
+            return result != -1;
+        } catch (SQLiteException e) {
+            Log.e("DBHelper", "Error saving daily steps: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Get daily steps for a user on a specific date
+    public int getDailySteps(String email, String date) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(
+                "SELECT " + COLUMN_STEPS_COUNT + ", " + COLUMN_STEPS_BASELINE + 
+                " FROM " + TABLE_DAILY_STEPS + 
+                " WHERE " + COLUMN_STEPS_EMAIL + " = ? AND " + COLUMN_STEPS_DATE + " = ?",
+                new String[]{email, date});
+        
+        int dailySteps = 0;
+        if (cursor.moveToFirst()) {
+            int totalSteps = cursor.getInt(0);
+            int baseline = cursor.getInt(1);
+            dailySteps = totalSteps - baseline;
+        }
+        cursor.close();
+        return Math.max(0, dailySteps); // Ensure non-negative
+    }
+
+    // Get baseline steps for a user on a specific date
+    public int getBaselineSteps(String email, String date) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(
+                "SELECT " + COLUMN_STEPS_BASELINE + 
+                " FROM " + TABLE_DAILY_STEPS + 
+                " WHERE " + COLUMN_STEPS_EMAIL + " = ? AND " + COLUMN_STEPS_DATE + " = ?",
+                new String[]{email, date});
+        
+        int baseline = 0;
+        if (cursor.moveToFirst()) {
+            baseline = cursor.getInt(0);
+        }
+        cursor.close();
+        return baseline;
     }
 }

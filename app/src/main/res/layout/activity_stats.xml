@@ -12,8 +12,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:src="@drawable/biker"
-        android:scaleType="centerCrop"
-        android:alpha="0.7"/>
+        android:scaleType="centerInside"
+        android:alpha="0.5"/>
 
     <ScrollView
         android:layout_width="match_parent"

@@ -8,6 +8,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.widget.LinearLayout;
 import android.widget.ImageView;
 import android.view.View;
+import android.widget.PopupMenu;
+import android.view.MenuItem;
 import java.util.Calendar;
 import java.util.Map;
 import java.text.SimpleDateFormat;
@@ -230,5 +232,32 @@ public class CalendarActivity extends AppCompatActivity {
             intent.putExtra("NAME", name);
             startActivity(intent);
         });
+
+        btnMenu.setOnClickListener(v -> showPopupMenu(v));
+    }
+
+    private void showPopupMenu(View view) {
+        PopupMenu popupMenu = new PopupMenu(this, view);
+        popupMenu.getMenuInflater().inflate(R.menu.popup_menu, popupMenu.getMenu());
+        
+        popupMenu.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.menu_settings) {
+                Intent intent = new Intent(this, SettingsActivity.class);
+                intent.putExtra("EMAIL", email);
+                intent.putExtra("NAME", name);
+                startActivity(intent);
+                return true;
+            } else if (itemId == R.id.menu_faq) {
+                Intent intent = new Intent(this, FAQActivity.class);
+                intent.putExtra("EMAIL", email);
+                intent.putExtra("NAME", name);
+                startActivity(intent);
+                return true;
+            }
+            return false;
+        });
+        
+        popupMenu.show();
     }
 }

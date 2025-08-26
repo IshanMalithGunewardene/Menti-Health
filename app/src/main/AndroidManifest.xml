@@ -47,5 +47,11 @@
         <activity
             android:name=".StatsActivity"
             android:theme="@style/Theme.MentiHealth"/>
+        <activity
+            android:name=".SettingsActivity"
+            android:theme="@style/Theme.MentiHealth"/>
+        <activity
+            android:name=".FAQActivity"
+            android:theme="@style/Theme.MentiHealth"/>
     </application>
 </manifest>

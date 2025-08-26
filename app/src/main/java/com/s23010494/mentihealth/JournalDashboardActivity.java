@@ -4,7 +4,9 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -117,10 +119,10 @@ public class JournalDashboardActivity extends AppCompatActivity {
             });
         }
         
-        // Add Menu button with logout option
+        // Add Menu button with popup menu
         ImageButton btnMenu = findViewById(R.id.btn_menu);
         if (btnMenu != null) {
-            btnMenu.setOnClickListener(v -> showMenuDialog());
+            btnMenu.setOnClickListener(v -> showPopupMenu(v));
         }
     }
 
@@ -168,6 +170,31 @@ public class JournalDashboardActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+    
+    private void showPopupMenu(View view) {
+        PopupMenu popupMenu = new PopupMenu(this, view);
+        popupMenu.getMenuInflater().inflate(R.menu.popup_menu, popupMenu.getMenu());
+        
+        popupMenu.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.menu_settings) {
+                Intent intent = new Intent(this, SettingsActivity.class);
+                intent.putExtra("EMAIL", email);
+                intent.putExtra("NAME", name);
+                startActivity(intent);
+                return true;
+            } else if (itemId == R.id.menu_faq) {
+                Intent intent = new Intent(this, FAQActivity.class);
+                intent.putExtra("EMAIL", email);
+                intent.putExtra("NAME", name);
+                startActivity(intent);
+                return true;
+            }
+            return false;
+        });
+        
+        popupMenu.show();
     }
     
     private void showLogoutConfirmationDialog() {

@@ -233,6 +233,26 @@
             </LinearLayout>
 
 
+            <!-- Walking Invitation Text -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🚶‍♀️ Take a Walk in the Nearest Park! 🌳"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="8dp"/>
+                
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fresh air and nature can boost your mood and steps! 🌿✨"
+                android:textColor="#AAAAAA"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"/>
+
             <!-- Google Map Container -->
             <FrameLayout
                 android:layout_width="match_parent"

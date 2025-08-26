@@ -436,4 +436,75 @@ public class DBHelper extends SQLiteOpenHelper {
         cursor.close();
         return count;
     }
+    
+    // Get mood data for trend analysis (last 30 days)
+    public Map<String, String> getMoodsForTrendAnalysis(String email) {
+        Map<String, String> moodsByDate = new HashMap<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        // Get current date and 30 days ago
+        java.util.Calendar calendar = java.util.Calendar.getInstance();
+        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+        String currentDate = dateFormat.format(calendar.getTime());
+        
+        calendar.add(java.util.Calendar.DAY_OF_MONTH, -30);
+        String thirtyDaysAgo = dateFormat.format(calendar.getTime());
+        
+        // Query to get mood entries from the last 30 days
+        Cursor cursor = db.rawQuery(
+                "SELECT " + COLUMN_ENTRY_DATE + ", " + COLUMN_ENTRY_MOOD + 
+                " FROM " + TABLE_JOURNAL_ENTRIES +
+                " WHERE " + COLUMN_ENTRY_EMAIL + " = ? AND " + COLUMN_ENTRY_DATE + " >= ? AND " + COLUMN_ENTRY_DATE + " <= ?" +
+                " GROUP BY " + COLUMN_ENTRY_DATE +
+                " ORDER BY " + COLUMN_ENTRY_DATE + " ASC",
+                new String[]{email, thirtyDaysAgo, currentDate});
+        
+        if (cursor.moveToFirst()) {
+            do {
+                String date = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_DATE));
+                String mood = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_MOOD));
+                moodsByDate.put(date, mood);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return moodsByDate;
+    }
+    
+    // Get mood statistics for analysis
+    public Map<String, Integer> getMoodStatistics(String email) {
+        Map<String, Integer> moodStats = new HashMap<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        // Initialize all moods with 0
+        moodStats.put("Happy", 0);
+        moodStats.put("Calm", 0);
+        moodStats.put("Excited", 0);
+        moodStats.put("Sad", 0);
+        moodStats.put("Anxious", 0);
+        
+        // Get current date and 30 days ago
+        java.util.Calendar calendar = java.util.Calendar.getInstance();
+        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+        String currentDate = dateFormat.format(calendar.getTime());
+        
+        calendar.add(java.util.Calendar.DAY_OF_MONTH, -30);
+        String thirtyDaysAgo = dateFormat.format(calendar.getTime());
+        
+        Cursor cursor = db.rawQuery(
+                "SELECT " + COLUMN_ENTRY_MOOD + ", COUNT(*) as count" +
+                " FROM " + TABLE_JOURNAL_ENTRIES +
+                " WHERE " + COLUMN_ENTRY_EMAIL + " = ? AND " + COLUMN_ENTRY_DATE + " >= ? AND " + COLUMN_ENTRY_DATE + " <= ?" +
+                " GROUP BY " + COLUMN_ENTRY_MOOD,
+                new String[]{email, thirtyDaysAgo, currentDate});
+        
+        if (cursor.moveToFirst()) {
+            do {
+                String mood = cursor.getString(0);
+                int count = cursor.getInt(1);
+                moodStats.put(mood, count);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return moodStats;
+    }
 }

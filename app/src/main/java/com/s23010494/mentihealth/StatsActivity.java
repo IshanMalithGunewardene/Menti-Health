@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
 import androidx.fragment.app.FragmentActivity;
+import java.util.Map;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -27,6 +28,8 @@ public class StatsActivity extends FragmentActivity
     private TextView tvProgressText;
     private TextView tvGoalStatus;
     private SemicircularStepProgressView semicircularProgress;
+    private MoodTrendGraphView moodTrendGraph;
+    private MoodBarChartView moodBarChart;
     private DBHelper dbHelper;
     private String userEmail;
     private String currentDate;
@@ -54,6 +57,8 @@ public class StatsActivity extends FragmentActivity
         tvProgressText = findViewById(R.id.tv_progress_text);
         tvGoalStatus = findViewById(R.id.tv_goal_status);
         semicircularProgress = findViewById(R.id.semicircular_progress);
+        moodTrendGraph = findViewById(R.id.mood_trend_graph);
+        moodBarChart = findViewById(R.id.mood_bar_chart);
 
         // Initialize step counter sensor
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -64,8 +69,20 @@ public class StatsActivity extends FragmentActivity
         // Setup debug buttons (Remove in production)
         setupDebugButtons();
         
+        // Setup mood graph buttons
+        setupMoodGraphButtons();
+        
+        // Setup mood bar chart buttons
+        setupMoodBarChartButtons();
+        
         // Load existing daily step count from database
         loadDailyStepCount();
+        
+        // Load mood trend data
+        loadMoodTrendData();
+        
+        // Load mood bar chart data
+        loadMoodBarChartData();
 
         // Google Map
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -243,6 +260,12 @@ public class StatsActivity extends FragmentActivity
             
             runOnUiThread(() -> {
                 if (success) {
+                    // Refresh mood charts if we're on the sample user's account
+                    if (userEmail.equals(generator.getSampleEmail())) {
+                        loadMoodTrendData();
+                        loadMoodBarChartData();
+                    }
+                    
                     showSampleDataDialog("Sample Data Generated!", 
                         "Generated mood data for " + generator.getSampleEmail() + " (" + generator.getSampleName() + ")\n\n" +
                         "Login with:\nEmail: " + generator.getSampleEmail() + "\nPassword: password123\n\n" +
@@ -261,6 +284,12 @@ public class StatsActivity extends FragmentActivity
             
             runOnUiThread(() -> {
                 if (success) {
+                    // Refresh mood charts if we're on the sample user's account
+                    if (userEmail.equals(generator.getSampleEmail())) {
+                        loadMoodTrendData();
+                        loadMoodBarChartData();
+                    }
+                    
                     showSampleDataDialog("Sample Data Cleared!", 
                         "All mood data for " + generator.getSampleEmail() + " has been removed.");
                 } else {
@@ -276,6 +305,74 @@ public class StatsActivity extends FragmentActivity
                 .setMessage(message)
                 .setPositiveButton("OK", null)
                 .show();
+    }
+    
+    // Mood graph functionality
+    private void setupMoodGraphButtons() {
+        Button btnRefreshGraph = findViewById(R.id.btn_refresh_graph);
+        Button btnAnimateGraph = findViewById(R.id.btn_animate_graph);
+        
+        btnRefreshGraph.setOnClickListener(v -> {
+            loadMoodTrendData();
+        });
+        
+        btnAnimateGraph.setOnClickListener(v -> {
+            if (moodTrendGraph != null) {
+                moodTrendGraph.startAnimation();
+            }
+        });
+    }
+    
+    private void loadMoodTrendData() {
+        new Thread(() -> {
+            Map<String, String> moodData = dbHelper.getMoodsForTrendAnalysis(userEmail);
+            
+            runOnUiThread(() -> {
+                if (moodTrendGraph != null) {
+                    moodTrendGraph.setMoodData(moodData);
+                    
+                    // Auto-animate if there's data
+                    if (moodTrendGraph.hasData()) {
+                        moodTrendGraph.startAnimation();
+                    }
+                }
+            });
+        }).start();
+    }
+    
+    // Mood bar chart functionality
+    private void setupMoodBarChartButtons() {
+        Button btnRefreshMoodChart = findViewById(R.id.btn_refresh_mood_chart);
+        Button btnAnimateMoodChart = findViewById(R.id.btn_animate_mood_chart);
+        
+        btnRefreshMoodChart.setOnClickListener(v -> {
+            loadMoodBarChartData();
+        });
+        
+        btnAnimateMoodChart.setOnClickListener(v -> {
+            if (moodBarChart != null) {
+                moodBarChart.startAnimation();
+            }
+        });
+    }
+    
+    private void loadMoodBarChartData() {
+        new Thread(() -> {
+            // Get mood statistics from database
+            Map<String, Integer> moodCounts = dbHelper.getMoodStatistics(userEmail);
+            
+            runOnUiThread(() -> {
+                if (moodBarChart != null) {
+                    // Update the bar chart with mood data
+                    moodBarChart.setMoodData(moodCounts);
+                    
+                    // Auto-animate the bars
+                    if (moodBarChart.hasData()) {
+                        moodBarChart.startAnimation();
+                    }
+                }
+            });
+        }).start();
     }
 }
 

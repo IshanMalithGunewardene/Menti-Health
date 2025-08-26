@@ -26,6 +26,57 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- Mood Statistics Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                app:cardCornerRadius="24dp"
+                app:cardBackgroundColor="#232325"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="8dp">
+
+                    <!-- Mood Bar Chart -->
+                    <com.s23010494.mentihealth.MoodBarChartView
+                        android:id="@+id/mood_bar_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+                        
+                    <!-- Chart Controls -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_marginTop="4dp">
+                        
+                        <Button
+                            android:id="@+id/btn_refresh_mood_chart"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:text="Refresh"
+                            android:layout_marginEnd="8dp"
+                            android:backgroundTint="#31E3BD"
+                            android:textColor="#000000"
+                            android:textSize="11sp"/>
+                            
+                        <Button
+                            android:id="@+id/btn_animate_mood_chart"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:text="Animate"
+                            android:backgroundTint="#31E3BD"
+                            android:textColor="#000000"
+                            android:textSize="11sp"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <!-- Step Counter Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -170,6 +221,57 @@
                         android:textSize="12sp"/>
                 </LinearLayout>
             </LinearLayout>
+
+            <!-- Mood Trend Analysis Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                app:cardCornerRadius="24dp"
+                app:cardBackgroundColor="#232325"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Mood Trend Graph -->
+                    <com.s23010494.mentihealth.MoodTrendGraphView
+                        android:id="@+id/mood_trend_graph"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+                        
+                    <!-- Graph Controls -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp">
+                        
+                        <Button
+                            android:id="@+id/btn_refresh_graph"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="Refresh Data"
+                            android:layout_marginEnd="8dp"
+                            android:backgroundTint="#31E3BD"
+                            android:textColor="#000000"
+                            android:textSize="12sp"/>
+                            
+                        <Button
+                            android:id="@+id/btn_animate_graph"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:text="Animate"
+                            android:backgroundTint="#31E3BD"
+                            android:textColor="#000000"
+                            android:textSize="12sp"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
             <!-- Nearby Parks Section -->
             <TextView

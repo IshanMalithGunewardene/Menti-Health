@@ -5,6 +5,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.fragment.app.FragmentActivity;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -23,6 +24,8 @@ public class StatsActivity extends FragmentActivity
     private SensorManager sensorManager;
     private Sensor stepCounterSensor;
     private TextView tvStepCount;
+    private TextView tvProgressText;
+    private HorizontalStepProgressView horizontalProgress;
     private DBHelper dbHelper;
     private String userEmail;
     private String currentDate;
@@ -47,6 +50,8 @@ public class StatsActivity extends FragmentActivity
         currentDate = sdf.format(new Date());
 
         tvStepCount = findViewById(R.id.tv_step_count);
+        tvProgressText = findViewById(R.id.tv_progress_text);
+        horizontalProgress = findViewById(R.id.horizontal_progress);
 
         // Initialize step counter sensor
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -54,6 +59,9 @@ public class StatsActivity extends FragmentActivity
             stepCounterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
         }
 
+        // Setup debug buttons (Remove in production)
+        setupDebugButtons();
+        
         // Load existing daily step count from database
         loadDailyStepCount();
 
@@ -115,8 +123,8 @@ public class StatsActivity extends FragmentActivity
                 dailyStepCount = 0;
             }
             
-            // Update UI
-            tvStepCount.setText(String.valueOf(dailyStepCount));
+            // Update UI with animation
+            updateStepCountDisplay(dailyStepCount);
             
             // Save to database
             dbHelper.saveDailySteps(userEmail, currentDate, totalStepsSinceReboot, baselineSteps);
@@ -131,7 +139,53 @@ public class StatsActivity extends FragmentActivity
     private void loadDailyStepCount() {
         // Load existing daily step count from database
         dailyStepCount = dbHelper.getDailySteps(userEmail, currentDate);
-        tvStepCount.setText(String.valueOf(dailyStepCount));
+        updateStepCountDisplay(dailyStepCount);
+    }
+    
+    private void updateStepCountDisplay(int stepCount) {
+        // Update text display
+        tvStepCount.setText(String.valueOf(stepCount));
+        
+        // Update progress text (show current steps out of goal)
+        if (tvProgressText != null) {
+            int goal = horizontalProgress != null ? horizontalProgress.getMaxStepsGoal() : 10000;
+            tvProgressText.setText(String.format("%s / %s steps", 
+                String.format("%,d", stepCount),
+                String.format("%,d", goal)));
+        }
+        
+        // Update horizontal progress with animation
+        if (horizontalProgress != null) {
+            horizontalProgress.setStepCount(stepCount);
+        }
+    }
+    
+    // Debug methods for testing (Remove in production)
+    private void setupDebugButtons() {
+        Button btnAdd100 = findViewById(R.id.btn_add_100_steps);
+        Button btnAdd500 = findViewById(R.id.btn_add_500_steps);
+        Button btnReset = findViewById(R.id.btn_reset_steps);
+        
+        btnAdd100.setOnClickListener(v -> {
+            dailyStepCount += 100;
+            updateStepCountDisplay(dailyStepCount);
+            // Update database
+            dbHelper.saveDailySteps(userEmail, currentDate, baselineSteps + dailyStepCount, baselineSteps);
+        });
+        
+        btnAdd500.setOnClickListener(v -> {
+            dailyStepCount += 500;
+            updateStepCountDisplay(dailyStepCount);
+            // Update database
+            dbHelper.saveDailySteps(userEmail, currentDate, baselineSteps + dailyStepCount, baselineSteps);
+        });
+        
+        btnReset.setOnClickListener(v -> {
+            dailyStepCount = 0;
+            updateStepCountDisplay(dailyStepCount);
+            // Update database
+            dbHelper.saveDailySteps(userEmail, currentDate, baselineSteps, baselineSteps);
+        });
     }
 }
 

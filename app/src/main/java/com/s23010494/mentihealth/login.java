@@ -49,10 +49,10 @@ public class login extends AppCompatActivity {
         if (dbHelper.authenticateUser(email, password)) {
             // Check if user already has a name stored
             if (dbHelper.hasName(email)) {
-                // User already has a name - welcome them back and go to MoodTracker
+                // User already has a name - welcome them back and go to Dashboard
                 String userName = dbHelper.getName(email);
                 Toast.makeText(this, "Welcome back, " + userName + "!", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(login.this, MoodTrackerActivity.class);
+                Intent intent = new Intent(login.this, JournalDashboardActivity.class);
                 intent.putExtra("EMAIL", email);
                 intent.putExtra("NAME", userName);
                 // Clear the back stack so user can't go back to login

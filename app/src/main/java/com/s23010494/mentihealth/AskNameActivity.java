@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class AskNameActivity extends AppCompatActivity {
     private EditText etName;
     private DBHelper dbHelper;
+    private SessionManager sessionManager;
     private String email;
 
     @Override
@@ -18,6 +19,7 @@ public class AskNameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_ask_name);
 
         dbHelper = new DBHelper(this);
+        sessionManager = new SessionManager(this);
         etName = findViewById(R.id.et_name);
         Button btnStart = findViewById(R.id.btn_start);
 
@@ -31,6 +33,9 @@ public class AskNameActivity extends AppCompatActivity {
                 return;
             }
             if (dbHelper.updateName(email, name)) {
+                // Save login session now that we have complete user info
+                sessionManager.createLoginSession(email, name);
+                
                 Toast.makeText(this, "Welcome, " + name + "!", Toast.LENGTH_SHORT).show();
                 
                 // Launch Terms and Conditions page instead of MainActivity

@@ -29,90 +29,146 @@
             <!-- Step Counter Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
+                android:layout_height="280dp"
                 app:cardCornerRadius="24dp"
                 app:cardBackgroundColor="#232325"
                 android:layout_marginBottom="24dp">
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:padding="24dp"
-                    android:gravity="center">
+                    android:padding="24dp">
 
-                    <!-- Step Count -->
+                    <!-- Semicircular Progress Arc (Above everything) -->
+                    <com.s23010494.mentihealth.SemicircularStepProgressView
+                        android:id="@+id/semicircular_progress"
+                        android:layout_width="200dp"
+                        android:layout_height="100dp"
+                        android:layout_centerHorizontal="true"
+                        android:layout_alignParentTop="true"
+                        android:layout_marginTop="16dp" />
+
+                    <!-- Step Count (Below the arc) -->
                     <TextView
                         android:id="@+id/tv_step_count"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_below="@id/semicircular_progress"
+                        android:layout_centerHorizontal="true"
                         android:text="0"
                         android:textColor="#FFFFFF"
-                        android:textSize="56sp"
+                        android:textSize="48sp"
                         android:textStyle="bold"
-                        android:layout_marginBottom="8dp" />
+                        android:layout_marginTop="8dp" />
 
                     <!-- Step Count Label -->
                     <TextView
+                        android:id="@+id/tv_step_label"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_below="@id/tv_step_count"
+                        android:layout_centerHorizontal="true"
                         android:text="Today Step Count"
-                        android:textSize="16sp"
+                        android:textSize="14sp"
                         android:textColor="#AAAAAA"
-                        android:layout_marginBottom="24dp"/>
-                        
-                    <!-- Horizontal Progress Bar -->
-                    <com.s23010494.mentihealth.HorizontalStepProgressView
-                        android:id="@+id/horizontal_progress"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginHorizontal="16dp" />
+                        android:layout_marginTop="4dp"/>
                         
                     <!-- Progress Text -->
                     <TextView
                         android:id="@+id/tv_progress_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_below="@id/tv_step_label"
+                        android:layout_centerHorizontal="true"
                         android:text="0 / 10,000 steps"
                         android:textSize="12sp"
                         android:textColor="#888888"
                         android:layout_marginTop="8dp"/>
-                </LinearLayout>
+                        
+                    <!-- Goal completion text -->
+                    <TextView
+                        android:id="@+id/tv_goal_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/tv_progress_text"
+                        android:layout_centerHorizontal="true"
+                        android:text="Keep going! 💪"
+                        android:textSize="11sp"
+                        android:textColor="#31E3BD"
+                        android:layout_marginTop="4dp"
+                        android:visibility="gone"/>
+                </RelativeLayout>
             </androidx.cardview.widget.CardView>
 
             <!-- Debug Controls (Remove in production) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:layout_marginBottom="16dp"
                 android:gravity="center">
                 
-                <Button
-                    android:id="@+id/btn_add_100_steps"
-                    android:layout_width="wrap_content"
+                <!-- Step counter debug buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="+100 Steps"
-                    android:layout_marginEnd="8dp"
-                    android:backgroundTint="#31E3BD"
-                    android:textColor="#000000"/>
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center">
                     
-                <Button
-                    android:id="@+id/btn_add_500_steps"
-                    android:layout_width="wrap_content"
+                    <Button
+                        android:id="@+id/btn_add_100_steps"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="+100 Steps"
+                        android:layout_marginEnd="8dp"
+                        android:backgroundTint="#31E3BD"
+                        android:textColor="#000000"/>
+                        
+                    <Button
+                        android:id="@+id/btn_add_500_steps"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="+500 Steps"
+                        android:layout_marginEnd="8dp"
+                        android:backgroundTint="#31E3BD"
+                        android:textColor="#000000"/>
+                        
+                    <Button
+                        android:id="@+id/btn_reset_steps"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Reset"
+                        android:backgroundTint="#FF5252"
+                        android:textColor="#FFFFFF"/>
+                </LinearLayout>
+                
+                <!-- Sample data generation buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="+500 Steps"
-                    android:layout_marginEnd="8dp"
-                    android:backgroundTint="#31E3BD"
-                    android:textColor="#000000"/>
+                    android:orientation="horizontal"
+                    android:gravity="center">
                     
-                <Button
-                    android:id="@+id/btn_reset_steps"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Reset"
-                    android:backgroundTint="#FF5252"
-                    android:textColor="#FFFFFF"/>
+                    <Button
+                        android:id="@+id/btn_generate_sample_data"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Generate Sample Data"
+                        android:layout_marginEnd="8dp"
+                        android:backgroundTint="#9C27B0"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"/>
+                        
+                    <Button
+                        android:id="@+id/btn_clear_sample_data"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Clear Sample Data"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"/>
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Nearby Parks Section -->

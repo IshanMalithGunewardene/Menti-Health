@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class login extends AppCompatActivity {
     private EditText etEmail, etPassword;
     private DBHelper dbHelper;
+    private SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,6 +19,7 @@ public class login extends AppCompatActivity {
         setContentView(R.layout.login);
 
         dbHelper = new DBHelper(this);
+        sessionManager = new SessionManager(this);
 
         etEmail = findViewById(R.id.et_email);
         etPassword = findViewById(R.id.et_password);
@@ -51,6 +53,10 @@ public class login extends AppCompatActivity {
             if (dbHelper.hasName(email)) {
                 // User already has a name - welcome them back and go to Dashboard
                 String userName = dbHelper.getName(email);
+                
+                // Save login session
+                sessionManager.createLoginSession(email, userName);
+                
                 Toast.makeText(this, "Welcome back, " + userName + "!", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(login.this, JournalDashboardActivity.class);
                 intent.putExtra("EMAIL", email);
@@ -61,6 +67,7 @@ public class login extends AppCompatActivity {
                 finish();
             } else {
                 // User doesn't have a name yet - go to AskNameActivity
+                // Don't save session yet - wait until name is provided
                 Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(login.this, AskNameActivity.class);
                 intent.putExtra("EMAIL", email);

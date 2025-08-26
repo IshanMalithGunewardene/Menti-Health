@@ -383,4 +383,57 @@ public class DBHelper extends SQLiteOpenHelper {
         cursor.close();
         return baseline;
     }
+    
+    // Check if user exists (alias for checkEmailExists for consistency)
+    public boolean userExists(String email) {
+        return checkEmailExists(email);
+    }
+    
+    // Insert journal entry (alternative method name for sample generator)
+    public long insertJournalEntry(String email, String mood, String entryText, String date) {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_ENTRY_EMAIL, email);
+            values.put(COLUMN_ENTRY_MOOD, mood);
+            values.put(COLUMN_ENTRY_TEXT, entryText);
+            values.put(COLUMN_ENTRY_DATE, date);
+
+            return db.insert(TABLE_JOURNAL_ENTRIES, null, values);
+        } catch (Exception e) {
+            Log.e("DBHelper", "Error inserting journal entry: " + e.getMessage());
+            return -1;
+        }
+    }
+    
+    // Delete all journal entries for a specific user
+    public boolean deleteAllJournalEntries(String email) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            int rowsDeleted = db.delete(TABLE_JOURNAL_ENTRIES,
+                    COLUMN_ENTRY_EMAIL + " = ?",
+                    new String[]{email});
+            
+            Log.d("DBHelper", "Deleted " + rowsDeleted + " journal entries for user: " + email);
+            return rowsDeleted >= 0; // Return true even if 0 entries deleted (user might not have any)
+        } catch (SQLiteException e) {
+            Log.e("DBHelper", "Error deleting all journal entries: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    // Get count of journal entries for a user (useful for stats)
+    public int getJournalEntryCount(String email) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(
+                "SELECT COUNT(*) FROM " + TABLE_JOURNAL_ENTRIES + " WHERE " + COLUMN_ENTRY_EMAIL + " = ?",
+                new String[]{email});
+        
+        int count = 0;
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0);
+        }
+        cursor.close();
+        return count;
+    }
 }

@@ -25,7 +25,8 @@ public class StatsActivity extends FragmentActivity
     private Sensor stepCounterSensor;
     private TextView tvStepCount;
     private TextView tvProgressText;
-    private HorizontalStepProgressView horizontalProgress;
+    private TextView tvGoalStatus;
+    private SemicircularStepProgressView semicircularProgress;
     private DBHelper dbHelper;
     private String userEmail;
     private String currentDate;
@@ -51,7 +52,8 @@ public class StatsActivity extends FragmentActivity
 
         tvStepCount = findViewById(R.id.tv_step_count);
         tvProgressText = findViewById(R.id.tv_progress_text);
-        horizontalProgress = findViewById(R.id.horizontal_progress);
+        tvGoalStatus = findViewById(R.id.tv_goal_status);
+        semicircularProgress = findViewById(R.id.semicircular_progress);
 
         // Initialize step counter sensor
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -144,19 +146,53 @@ public class StatsActivity extends FragmentActivity
     
     private void updateStepCountDisplay(int stepCount) {
         // Update text display
-        tvStepCount.setText(String.valueOf(stepCount));
+        tvStepCount.setText(String.format("%,d", stepCount));
         
         // Update progress text (show current steps out of goal)
         if (tvProgressText != null) {
-            int goal = horizontalProgress != null ? horizontalProgress.getMaxStepsGoal() : 10000;
+            int goal = semicircularProgress != null ? semicircularProgress.getMaxStepsGoal() : 10000;
             tvProgressText.setText(String.format("%s / %s steps", 
                 String.format("%,d", stepCount),
                 String.format("%,d", goal)));
         }
         
-        // Update horizontal progress with animation
-        if (horizontalProgress != null) {
-            horizontalProgress.setStepCount(stepCount);
+        // Update semicircular progress with animation
+        if (semicircularProgress != null) {
+            semicircularProgress.setStepCount(stepCount);
+        }
+        
+        // Update goal status message
+        updateGoalStatusMessage(stepCount);
+    }
+    
+    private void updateGoalStatusMessage(int stepCount) {
+        if (tvGoalStatus == null) return;
+        
+        int goal = semicircularProgress != null ? semicircularProgress.getMaxStepsGoal() : 10000;
+        float percentage = (float) stepCount / goal * 100;
+        
+        if (stepCount == 0) {
+            tvGoalStatus.setVisibility(TextView.GONE);
+        } else if (stepCount >= goal) {
+            tvGoalStatus.setText("🎉 Goal Achieved! Amazing! 🎉");
+            tvGoalStatus.setTextColor(0xFF31E3BD); // Brand color
+            tvGoalStatus.setVisibility(TextView.VISIBLE);
+        } else if (percentage >= 75) {
+            tvGoalStatus.setText("🔥 Almost there! Keep going! 🔥");
+            tvGoalStatus.setTextColor(0xFF31E3BD); // Brand color
+            tvGoalStatus.setVisibility(TextView.VISIBLE);
+        } else if (percentage >= 50) {
+            tvGoalStatus.setText("💪 Halfway there! Great job! 💪");
+            tvGoalStatus.setTextColor(0xFF31E3BD); // Brand color
+            tvGoalStatus.setVisibility(TextView.VISIBLE);
+        } else if (percentage >= 25) {
+            tvGoalStatus.setText("🚀 Good progress! Keep it up! 🚀");
+            tvGoalStatus.setTextColor(0xFF31E3BD); // Brand color
+            tvGoalStatus.setVisibility(TextView.VISIBLE);
+        } else {
+            tvGoalStatus.setText("🏃 Let's get moving! You got this! 🏃");
+            tvGoalStatus.setTextColor(0xFF31E3BD); // Brand color
+            tvGoalStatus.setVisibility(TextView.VISIBLE);
         }
     }
     
@@ -165,7 +201,10 @@ public class StatsActivity extends FragmentActivity
         Button btnAdd100 = findViewById(R.id.btn_add_100_steps);
         Button btnAdd500 = findViewById(R.id.btn_add_500_steps);
         Button btnReset = findViewById(R.id.btn_reset_steps);
+        Button btnGenerateSample = findViewById(R.id.btn_generate_sample_data);
+        Button btnClearSample = findViewById(R.id.btn_clear_sample_data);
         
+        // Step counter debug buttons
         btnAdd100.setOnClickListener(v -> {
             dailyStepCount += 100;
             updateStepCountDisplay(dailyStepCount);
@@ -186,6 +225,57 @@ public class StatsActivity extends FragmentActivity
             // Update database
             dbHelper.saveDailySteps(userEmail, currentDate, baselineSteps, baselineSteps);
         });
+        
+        // Sample data generation buttons
+        btnGenerateSample.setOnClickListener(v -> {
+            generateSampleMoodData();
+        });
+        
+        btnClearSample.setOnClickListener(v -> {
+            clearSampleMoodData();
+        });
+    }
+    
+    private void generateSampleMoodData() {
+        new Thread(() -> {
+            SampleDataGenerator generator = new SampleDataGenerator(this);
+            boolean success = generator.generateSampleMoodData();
+            
+            runOnUiThread(() -> {
+                if (success) {
+                    showSampleDataDialog("Sample Data Generated!", 
+                        "Generated mood data for " + generator.getSampleEmail() + " (" + generator.getSampleName() + ")\n\n" +
+                        "Login with:\nEmail: " + generator.getSampleEmail() + "\nPassword: password123\n\n" +
+                        "This account now has 30 days of sample mood entries with realistic patterns!");
+                } else {
+                    showSampleDataDialog("Error", "Failed to generate sample data. Check logs for details.");
+                }
+            });
+        }).start();
+    }
+    
+    private void clearSampleMoodData() {
+        new Thread(() -> {
+            SampleDataGenerator generator = new SampleDataGenerator(this);
+            boolean success = generator.clearSampleUserData();
+            
+            runOnUiThread(() -> {
+                if (success) {
+                    showSampleDataDialog("Sample Data Cleared!", 
+                        "All mood data for " + generator.getSampleEmail() + " has been removed.");
+                } else {
+                    showSampleDataDialog("Error", "Failed to clear sample data. Check logs for details.");
+                }
+            });
+        }).start();
+    }
+    
+    private void showSampleDataDialog(String title, String message) {
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
     }
 }
 

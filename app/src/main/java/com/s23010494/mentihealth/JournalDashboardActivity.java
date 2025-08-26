@@ -16,6 +16,7 @@ public class JournalDashboardActivity extends AppCompatActivity {
     private RecyclerView rvJournalEntries;
     private JournalEntriesAdapter adapter;
     private DBHelper dbHelper;
+    private SessionManager sessionManager;
     private String email;
     private String name;
 
@@ -26,6 +27,7 @@ public class JournalDashboardActivity extends AppCompatActivity {
         Log.d(TAG, "Activity created");
 
         dbHelper = new DBHelper(this);
+        sessionManager = new SessionManager(this);
 
         email = getIntent().getStringExtra("EMAIL");
         name = getIntent().getStringExtra("NAME");
@@ -114,6 +116,12 @@ public class JournalDashboardActivity extends AppCompatActivity {
                 startActivity(intent);
             });
         }
+        
+        // Add Menu button with logout option
+        ImageButton btnMenu = findViewById(R.id.btn_menu);
+        if (btnMenu != null) {
+            btnMenu.setOnClickListener(v -> showMenuDialog());
+        }
     }
 
     @Override
@@ -135,6 +143,49 @@ public class JournalDashboardActivity extends AppCompatActivity {
                     } else {
                         Toast.makeText(this, "Failed to delete entry", Toast.LENGTH_SHORT).show();
                     }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    
+    private void showMenuDialog() {
+        String[] menuOptions = {"Profile", "Settings", "Logout"};
+        
+        new AlertDialog.Builder(this)
+                .setTitle("Menu")
+                .setItems(menuOptions, (dialog, which) -> {
+                    switch (which) {
+                        case 0: // Profile
+                            Toast.makeText(this, "Profile: " + name + " (" + email + ")", Toast.LENGTH_LONG).show();
+                            break;
+                        case 1: // Settings
+                            Toast.makeText(this, "Settings coming soon!", Toast.LENGTH_SHORT).show();
+                            break;
+                        case 2: // Logout
+                            showLogoutConfirmationDialog();
+                            break;
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    
+    private void showLogoutConfirmationDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Logout")
+                .setMessage("Are you sure you want to logout?")
+                .setPositiveButton("Logout", (dialog, which) -> {
+                    // Clear session data
+                    sessionManager.logoutUser();
+                    
+                    // Show logout message
+                    Toast.makeText(this, "Logged out successfully!", Toast.LENGTH_SHORT).show();
+                    
+                    // Redirect to welcome screen
+                    Intent intent = new Intent(this, welcome.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();

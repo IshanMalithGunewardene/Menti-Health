@@ -28,8 +28,7 @@ public class StatsActivity extends FragmentActivity
     private TextView tvProgressText;
     private TextView tvGoalStatus;
     private SemicircularStepProgressView semicircularProgress;
-    private MoodTrendGraphView moodTrendGraph;
-    private MoodBarChartView moodBarChart;
+    private MoodLineChartView moodLineChart;
     private DBHelper dbHelper;
     private String userEmail;
     private String currentDate;
@@ -57,8 +56,7 @@ public class StatsActivity extends FragmentActivity
         tvProgressText = findViewById(R.id.tv_progress_text);
         tvGoalStatus = findViewById(R.id.tv_goal_status);
         semicircularProgress = findViewById(R.id.semicircular_progress);
-        moodTrendGraph = findViewById(R.id.mood_trend_graph);
-        moodBarChart = findViewById(R.id.mood_bar_chart);
+        moodLineChart = findViewById(R.id.mood_line_chart);
 
         // Initialize step counter sensor
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -69,20 +67,14 @@ public class StatsActivity extends FragmentActivity
         // Setup debug buttons (Remove in production)
         setupDebugButtons();
         
-        // Setup mood graph buttons
-        setupMoodGraphButtons();
-        
-        // Setup mood bar chart buttons
-        setupMoodBarChartButtons();
+        // Setup mood line chart buttons
+        setupMoodLineChartButtons();
         
         // Load existing daily step count from database
         loadDailyStepCount();
         
-        // Load mood trend data
-        loadMoodTrendData();
-        
-        // Load mood bar chart data
-        loadMoodBarChartData();
+        // Load mood line chart data
+        loadMoodLineChartData();
 
         // Google Map
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -254,48 +246,56 @@ public class StatsActivity extends FragmentActivity
     }
     
     private void generateSampleMoodData() {
+        // Show progress immediately
+        showSampleDataDialog("Generating Data...", "Please wait while we create sample mood data for testing.");
+        
         new Thread(() -> {
-            SampleDataGenerator generator = new SampleDataGenerator(this);
-            boolean success = generator.generateSampleMoodData();
-            
-            runOnUiThread(() -> {
-                if (success) {
-                    // Refresh mood charts if we're on the sample user's account
-                    if (userEmail.equals(generator.getSampleEmail())) {
-                        loadMoodTrendData();
-                        loadMoodBarChartData();
+            try {
+                SampleDataGenerator generator = new SampleDataGenerator(this);
+                boolean success = generator.generateSampleMoodData(userEmail);
+                
+                runOnUiThread(() -> {
+                    if (success) {
+                        // Refresh mood charts for the current user
+                        loadMoodLineChartData();
+                        
+                        showSampleDataDialog("Sample Data Generated!", 
+                            "Generated 30 days of sample mood and journal entries for your account!\n\n" +
+                            "The data includes realistic mood patterns and journal entries that you can see in your calendar and journal pages.");
+                    } else {
+                        showSampleDataDialog("Error", "Failed to generate sample data. Make sure you're logged in with a valid account.");
                     }
-                    
-                    showSampleDataDialog("Sample Data Generated!", 
-                        "Generated mood data for " + generator.getSampleEmail() + " (" + generator.getSampleName() + ")\n\n" +
-                        "Login with:\nEmail: " + generator.getSampleEmail() + "\nPassword: password123\n\n" +
-                        "This account now has 30 days of sample mood entries with realistic patterns!");
-                } else {
-                    showSampleDataDialog("Error", "Failed to generate sample data. Check logs for details.");
-                }
-            });
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    showSampleDataDialog("Error", "An error occurred while generating sample data: " + e.getMessage());
+                });
+            }
         }).start();
     }
     
     private void clearSampleMoodData() {
         new Thread(() -> {
-            SampleDataGenerator generator = new SampleDataGenerator(this);
-            boolean success = generator.clearSampleUserData();
-            
-            runOnUiThread(() -> {
-                if (success) {
-                    // Refresh mood charts if we're on the sample user's account
-                    if (userEmail.equals(generator.getSampleEmail())) {
-                        loadMoodTrendData();
-                        loadMoodBarChartData();
+            try {
+                DBHelper dbHelper = new DBHelper(this);
+                boolean success = dbHelper.deleteAllJournalEntries(userEmail);
+                
+                runOnUiThread(() -> {
+                    if (success) {
+                        // Refresh mood charts for the current user
+                        loadMoodLineChartData();
+                        
+                        showSampleDataDialog("Data Cleared!", 
+                            "All mood and journal entries for your account have been removed.");
+                    } else {
+                        showSampleDataDialog("Error", "Failed to clear data. Check logs for details.");
                     }
-                    
-                    showSampleDataDialog("Sample Data Cleared!", 
-                        "All mood data for " + generator.getSampleEmail() + " has been removed.");
-                } else {
-                    showSampleDataDialog("Error", "Failed to clear sample data. Check logs for details.");
-                }
-            });
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    showSampleDataDialog("Error", "An error occurred while clearing data: " + e.getMessage());
+                });
+            }
         }).start();
     }
     
@@ -307,68 +307,36 @@ public class StatsActivity extends FragmentActivity
                 .show();
     }
     
-    // Mood graph functionality
-    private void setupMoodGraphButtons() {
-        Button btnRefreshGraph = findViewById(R.id.btn_refresh_graph);
-        Button btnAnimateGraph = findViewById(R.id.btn_animate_graph);
-        
-        btnRefreshGraph.setOnClickListener(v -> {
-            loadMoodTrendData();
-        });
-        
-        btnAnimateGraph.setOnClickListener(v -> {
-            if (moodTrendGraph != null) {
-                moodTrendGraph.startAnimation();
-            }
-        });
-    }
     
-    private void loadMoodTrendData() {
-        new Thread(() -> {
-            Map<String, String> moodData = dbHelper.getMoodsForTrendAnalysis(userEmail);
-            
-            runOnUiThread(() -> {
-                if (moodTrendGraph != null) {
-                    moodTrendGraph.setMoodData(moodData);
-                    
-                    // Auto-animate if there's data
-                    if (moodTrendGraph.hasData()) {
-                        moodTrendGraph.startAnimation();
-                    }
-                }
-            });
-        }).start();
-    }
-    
-    // Mood bar chart functionality
-    private void setupMoodBarChartButtons() {
+    // Mood line chart functionality
+    private void setupMoodLineChartButtons() {
         Button btnRefreshMoodChart = findViewById(R.id.btn_refresh_mood_chart);
         Button btnAnimateMoodChart = findViewById(R.id.btn_animate_mood_chart);
         
         btnRefreshMoodChart.setOnClickListener(v -> {
-            loadMoodBarChartData();
+            loadMoodLineChartData();
         });
         
         btnAnimateMoodChart.setOnClickListener(v -> {
-            if (moodBarChart != null) {
-                moodBarChart.startAnimation();
+            if (moodLineChart != null) {
+                moodLineChart.startAnimation();
             }
         });
     }
     
-    private void loadMoodBarChartData() {
+    private void loadMoodLineChartData() {
         new Thread(() -> {
-            // Get mood statistics from database
-            Map<String, Integer> moodCounts = dbHelper.getMoodStatistics(userEmail);
+            // Get mood data for trend analysis from database
+            Map<String, String> moodData = dbHelper.getMoodsForTrendAnalysis(userEmail);
             
             runOnUiThread(() -> {
-                if (moodBarChart != null) {
-                    // Update the bar chart with mood data
-                    moodBarChart.setMoodData(moodCounts);
+                if (moodLineChart != null) {
+                    // Update the line chart with mood data
+                    moodLineChart.setMoodData(moodData);
                     
-                    // Auto-animate the bars
-                    if (moodBarChart.hasData()) {
-                        moodBarChart.startAnimation();
+                    // Auto-animate the lines
+                    if (moodLineChart.hasData()) {
+                        moodLineChart.startAnimation();
                     }
                 }
             });

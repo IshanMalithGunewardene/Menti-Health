@@ -29,12 +29,12 @@ public class MoodTrendGraphView extends View {
     private static final int POINT_COLOR = Color.parseColor("#31E3BD");
     private static final int FILL_COLOR = Color.parseColor("#1A31E3BD"); // Semi-transparent brand color
     
-    // Mood scoring system
-    private static final int MOOD_ANXIOUS = 1;
-    private static final int MOOD_SAD = 2;
-    private static final int MOOD_CALM = 3;
-    private static final int MOOD_HAPPY = 4;
-    private static final int MOOD_EXCITED = 5;
+    // Mood scoring system (updated for new mood tracker values)
+    private static final int MOOD_TERRIBLE = 1;
+    private static final int MOOD_NOT_GREAT = 2;
+    private static final int MOOD_MEH = 3;
+    private static final int MOOD_GOOD = 4;
+    private static final int MOOD_EXCELLENT = 5;
     
     private Paint linePaint;
     private Paint pointPaint;
@@ -111,7 +111,7 @@ public class MoodTrendGraphView extends View {
     public void setMoodData(Map<String, String> moodsByDate) {
         moodData.clear();
         
-        // Convert mood data to data points
+        // Convert mood data to data points - only take the first mood entry per day for trend
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         
         for (Map.Entry<String, String> entry : moodsByDate.entrySet()) {
@@ -124,7 +124,7 @@ public class MoodTrendGraphView extends View {
             }
         }
         
-        // Sort by date
+        // Sort by date to create chronological order
         Collections.sort(moodData, (a, b) -> a.date.compareTo(b.date));
         
         // Trigger redraw
@@ -132,26 +132,32 @@ public class MoodTrendGraphView extends View {
     }
     
     private int getMoodScore(String mood) {
-        if (mood == null) return MOOD_CALM;
+        if (mood == null) return MOOD_MEH;
         
-        switch (mood.toLowerCase()) {
-            case "anxious": return MOOD_ANXIOUS;
-            case "sad": return MOOD_SAD;
-            case "calm": return MOOD_CALM;
-            case "happy": return MOOD_HAPPY;
-            case "excited": return MOOD_EXCITED;
-            default: return MOOD_CALM;
+        switch (mood) {
+            case "Terrible": return MOOD_TERRIBLE;
+            case "Not great": return MOOD_NOT_GREAT;
+            case "Meh": return MOOD_MEH;
+            case "Good!": return MOOD_GOOD;
+            case "Excellent!": return MOOD_EXCELLENT;
+            // Support old values for backward compatibility
+            case "anxious": return MOOD_TERRIBLE;
+            case "sad": return MOOD_NOT_GREAT;
+            case "calm": return MOOD_MEH;
+            case "happy": return MOOD_GOOD;
+            case "excited": return MOOD_EXCELLENT;
+            default: return MOOD_MEH;
         }
     }
     
     private String getMoodLabel(int score) {
         switch (score) {
-            case MOOD_ANXIOUS: return "Anxious";
-            case MOOD_SAD: return "Sad";
-            case MOOD_CALM: return "Calm";
-            case MOOD_HAPPY: return "Happy";
-            case MOOD_EXCITED: return "Excited";
-            default: return "Calm";
+            case MOOD_TERRIBLE: return "Terrible";
+            case MOOD_NOT_GREAT: return "Not Great";
+            case MOOD_MEH: return "Meh";
+            case MOOD_GOOD: return "Good";
+            case MOOD_EXCELLENT: return "Excellent";
+            default: return "Meh";
         }
     }
     
@@ -222,7 +228,7 @@ public class MoodTrendGraphView extends View {
         textPaint.setTextSize(20f);
         
         // Draw mood labels on the left
-        String[] labels = {"Anxious", "Sad", "Calm", "Happy", "Excited"};
+        String[] labels = {"Terrible", "Not Great", "Meh", "Good", "Excellent"};
         for (int i = 0; i < labels.length; i++) {
             float y = chartArea.bottom - (i * (chartArea.height() / 4f)) + 8f;
             canvas.drawText(labels[i], 10f, y, textPaint);
@@ -239,16 +245,17 @@ public class MoodTrendGraphView extends View {
         Path fillPath = new Path();
         boolean firstPoint = true;
         
+        // Create smooth curve using cubic Bezier interpolation
         for (int i = 0; i < moodData.size(); i++) {
             float progress = Math.min(animationProgress * moodData.size(), i + 1) - i;
             if (progress <= 0) break;
             
-            float x = chartArea.left + (i * chartArea.width() / (moodData.size() - 1));
+            float x = chartArea.left + (i * chartArea.width() / Math.max(1, moodData.size() - 1));
             float targetY = chartArea.bottom - ((moodData.get(i).moodScore - 1) * (chartArea.height() / 4f));
             float y = targetY;
             
             if (progress < 1f && i > 0) {
-                // Interpolate between previous and current point
+                // Smooth interpolation between previous and current point
                 float prevY = chartArea.bottom - ((moodData.get(i - 1).moodScore - 1) * (chartArea.height() / 4f));
                 y = prevY + (targetY - prevY) * progress;
             }
@@ -257,15 +264,27 @@ public class MoodTrendGraphView extends View {
                 trendPath.moveTo(x, y);
                 fillPath.moveTo(x, y);
                 firstPoint = false;
-            } else {
+            } else if (i == 1) {
+                // For the first line segment, use straight line
                 trendPath.lineTo(x, y);
                 fillPath.lineTo(x, y);
+            } else {
+                // Use quadratic Bezier curves for smooth transitions
+                float prevX = chartArea.left + ((i - 1) * chartArea.width() / Math.max(1, moodData.size() - 1));
+                float prevY = chartArea.bottom - ((moodData.get(i - 1).moodScore - 1) * (chartArea.height() / 4f));
+                
+                // Control point for smooth curve
+                float cpX = (prevX + x) / 2f;
+                float cpY = (prevY + y) / 2f;
+                
+                trendPath.quadTo(cpX, cpY, x, y);
+                fillPath.quadTo(cpX, cpY, x, y);
             }
         }
         
         // Complete fill path
-        if (!firstPoint) {
-            float lastX = chartArea.left + ((moodData.size() - 1) * chartArea.width() / (moodData.size() - 1));
+        if (!firstPoint && moodData.size() > 0) {
+            float lastX = chartArea.left + ((moodData.size() - 1) * chartArea.width() / Math.max(1, moodData.size() - 1));
             fillPath.lineTo(lastX, chartArea.bottom);
             fillPath.lineTo(chartArea.left, chartArea.bottom);
             fillPath.close();
@@ -285,20 +304,20 @@ public class MoodTrendGraphView extends View {
             float y = chartArea.bottom - ((moodData.get(i).moodScore - 1) * (chartArea.height() / 4f));
             
             // Draw point with scaling animation
-            float radius = 8f * Math.min(progress, 1f);
+            float radius = 6f * Math.min(progress, 1f);
             canvas.drawCircle(x, y, radius, pointPaint);
             
             // Draw inner circle for better visibility
             Paint innerPaint = new Paint(pointPaint);
             innerPaint.setColor(Color.WHITE);
-            canvas.drawCircle(x, y, radius * 0.4f, innerPaint);
+            canvas.drawCircle(x, y, radius * 0.5f, innerPaint);
         }
     }
     
     private void drawTitle(Canvas canvas) {
         textPaint.setTextSize(28f);
         textPaint.setColor(Color.WHITE);
-        canvas.drawText("Mood Trend Analysis", getWidth() / 2f, 35f, textPaint);
+        canvas.drawText("Mood Trends (30 Days)", getWidth() / 2f, 35f, textPaint);
         textPaint.setTextSize(24f);
         textPaint.setColor(TEXT_COLOR);
     }

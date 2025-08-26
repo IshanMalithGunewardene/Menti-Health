@@ -15,7 +15,7 @@ import java.util.Map;
 public class DBHelper extends SQLiteOpenHelper {
     // Database name and version
     private static final String DATABASE_NAME = "UserDB.db";
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
 
     // User table
     private static final String TABLE_USERS = "users";
@@ -38,6 +38,7 @@ public class DBHelper extends SQLiteOpenHelper {
     private static final String COLUMN_ENTRY_MOOD = "mood";
     private static final String COLUMN_ENTRY_TEXT = "entry_text";
     private static final String COLUMN_ENTRY_DATE = "entry_date";
+    private static final String COLUMN_ENTRY_IMAGE = "mood_image";
 
     // Daily steps table
     private static final String TABLE_DAILY_STEPS = "daily_steps";
@@ -65,7 +66,8 @@ public class DBHelper extends SQLiteOpenHelper {
             + COLUMN_ENTRY_EMAIL + " TEXT, "
             + COLUMN_ENTRY_MOOD + " TEXT, "
             + COLUMN_ENTRY_TEXT + " TEXT, "
-            + COLUMN_ENTRY_DATE + " TEXT)";
+            + COLUMN_ENTRY_DATE + " TEXT, "
+            + COLUMN_ENTRY_IMAGE + " TEXT)";
 
     private static final String CREATE_TABLE_DAILY_STEPS = "CREATE TABLE " + TABLE_DAILY_STEPS + "("
             + COLUMN_STEPS_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -99,6 +101,15 @@ public class DBHelper extends SQLiteOpenHelper {
                 Log.d("DBHelper", "Added daily steps table");
             } catch (SQLiteException e) {
                 Log.e("DBHelper", "Error adding daily steps table: " + e.getMessage());
+            }
+        }
+        if (oldVersion < 5) {
+            // Add image column to journal entries table for version 5
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_JOURNAL_ENTRIES + " ADD COLUMN " + COLUMN_ENTRY_IMAGE + " TEXT");
+                Log.d("DBHelper", "Added image column to journal entries table");
+            } catch (SQLiteException e) {
+                Log.e("DBHelper", "Error adding image column: " + e.getMessage());
             }
         }
     }
@@ -402,6 +413,24 @@ public class DBHelper extends SQLiteOpenHelper {
             return db.insert(TABLE_JOURNAL_ENTRIES, null, values);
         } catch (Exception e) {
             Log.e("DBHelper", "Error inserting journal entry: " + e.getMessage());
+            return -1;
+        }
+    }
+    
+    // Insert journal entry with image (for sample generator)
+    public long insertJournalEntryWithImage(String email, String mood, String entryText, String date, String image) {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_ENTRY_EMAIL, email);
+            values.put(COLUMN_ENTRY_MOOD, mood);
+            values.put(COLUMN_ENTRY_TEXT, entryText);
+            values.put(COLUMN_ENTRY_DATE, date);
+            values.put(COLUMN_ENTRY_IMAGE, image);
+
+            return db.insert(TABLE_JOURNAL_ENTRIES, null, values);
+        } catch (Exception e) {
+            Log.e("DBHelper", "Error inserting journal entry with image: " + e.getMessage());
             return -1;
         }
     }
